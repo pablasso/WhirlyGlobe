@@ -40,7 +40,7 @@ bool BuildLevel(int outX,int outY,const char *levelId,NSImage *img,int outSize,i
             float sy;
             sy = (outY-iy-1) * img.size.height / outY;
             
-            NSBitmapImageRep *imageRep = [[[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL pixelsWide:outSize pixelsHigh:outSize bitsPerSample:8 samplesPerPixel:3 hasAlpha:NO isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:4*outSize bitsPerPixel:32] autorelease];
+            NSBitmapImageRep *imageRep = [[[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL pixelsWide:outSize pixelsHigh:outSize bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace bitmapFormat:NSAlphaFirstBitmapFormat bytesPerRow:4*outSize bitsPerPixel:32] autorelease];
             
             // Create an NSGraphicsContext that draws into the NSBitmapImageRep, and make it current.
             NSGraphicsContext *nsContext = [NSGraphicsContext graphicsContextWithBitmapImageRep:imageRep];
@@ -70,20 +70,20 @@ bool BuildLevel(int outX,int outY,const char *levelId,NSImage *img,int outSize,i
                 CopyColumn(imageRep,outSize-borderSize-1,ib);
             
             // And save it out
-            NSData *resultData = [imageRep TIFFRepresentation];
+            NSData *resultData = [imageRep representationUsingType:NSPNGFileType properties:nil];
             char imgName[1024];
             if (levelId)
                 sprintf(imgName,"%s_%sx%dx%d",outName,levelId,ix,(outY-iy-1));
             else
                 sprintf(imgName,"%s_%dx%d",outName,ix,(outY-iy-1));
-            NSString *fullName = [NSString stringWithFormat:@"%s/%s.tiff",outDir,imgName];
+            NSString *fullName = [NSString stringWithFormat:@"%s/%s.png",outDir,imgName];
             [resultData writeToFile:fullName atomically:NO];
             
             // If they gave us a path to the texture tool, invoke that
             if (texTool)
             {
                 char cmd[1024];
-                sprintf(cmd,"%s -e PVRTC --channel-weighting-linear --bits-per-pixel-4 -o %s/%s.pvrtc %s/%s.tiff",
+                sprintf(cmd,"%s -e PVRTC --channel-weighting-linear --bits-per-pixel-4 -o %s/%s.pvrtc %s/%s.png",
                         texTool,outDir,imgName,outDir,imgName);
                 if (system(cmd))
                 {
@@ -231,7 +231,7 @@ int main (int argc, const char * argv[])
     
     // Create a little header for these images
     NSMutableDictionary *dict = [NSMutableDictionary dictionary];
-    [dict setValue:(texTool ? @"pvrtc" : @"tiff") forKey:@"format"];
+    [dict setValue:(texTool ? @"pvrtc" : @"png") forKey:@"format"];
     [dict setValue:[NSString stringWithFormat:@"%s",outName] forKey:@"baseName"];
 
     // Build the images
