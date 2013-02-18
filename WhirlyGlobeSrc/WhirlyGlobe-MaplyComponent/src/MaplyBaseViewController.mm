@@ -35,6 +35,13 @@ using namespace WhirlyKit;
     
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     
+    EAGLContext *oldContext = [EAGLContext currentContext];
+    [sceneRenderer useContext];
+    for (MaplyShader *shader in shaders)
+        [shader shutdown];
+    if (oldContext)
+        [EAGLContext setCurrentContext:oldContext];
+    
     if (layerThread)
     {
         [layerThread addThingToDelete:scene];
@@ -274,6 +281,7 @@ static const char *fragmentShaderNoLightLine =
     // 2D layout engine layer
     layoutLayer = [[WhirlyKitLayoutLayer alloc] initWithRenderer:sceneRenderer];
     labelLayer.layoutLayer = layoutLayer;
+    markerLayer.layoutLayer = layoutLayer;
     [layerThread addLayer:layoutLayer];
     
     // Lofted polygon layer
@@ -350,6 +358,11 @@ static const char *fragmentShaderNoLightLine =
     
     selection = true;
     
+}
+
+- (void) useGLContext
+{
+    [sceneRenderer useContext];
 }
 
 - (void)viewDidLoad
@@ -469,6 +482,13 @@ static const float PerfOutputDelay = 15.0;
 {
     [lights removeObject:light];
     [self updateLights];
+}
+
+- (void)addShader:(MaplyShader *)shader
+{
+    if (!shaders)
+        shaders = [NSMutableArray array];
+    [shaders addObject:shader];
 }
 
 - (MaplyViewControllerLayer *)addQuadEarthLayerWithMBTiles:(NSString *)name
@@ -689,6 +709,10 @@ static const float PerfOutputDelay = 15.0;
     }
 }
 
+- (void)setMaxLayoutObjects:(int)maxLayoutObjects
+{
+    layoutLayer.maxDisplayObjects = maxLayoutObjects;
+}
 
 /// Remove the data associated with an object the user added earlier
 - (void)removeObject:(WGComponentObject *)theObj
@@ -749,5 +773,16 @@ static const float PerfOutputDelay = 15.0;
     displayCoord.x = pt.x();    displayCoord.y = pt.y();    displayCoord.z = pt.z();
     return displayCoord;
 }
+
+- (void)setDefaultPolyShader:(MaplyShader *)shader
+{
+    scene->setDefaultPrograms(shader.program, NULL);
+}
+
+- (void)setDefaultLineShader:(MaplyShader *)shader
+{
+    scene->setDefaultPrograms(NULL, shader.program);
+}
+
 
 @end

@@ -27,6 +27,7 @@
 #import "MaplySharedAttributes.h"
 #import "MaplyViewControllerLayer.h"
 #import "MaplyLight.h"
+#import "MaplyShader.h"
 
 /** The MaplyBaseViewController is the base class for the Maply and WhirlyGlobe
     view controllers.  Most of its functionality is private, but you can use
@@ -130,6 +131,10 @@
 /// Remove the view tracker associated with the given UIView
 - (void)removeViewTrackForView:(UIView *)view;
 
+/// Set the max number of objects for the layout engine to display.
+/// This will only affect objects that have an importance set
+- (void)setMaxLayoutObjects:(int)maxLayoutObjects;
+
 /// Remove the data associated with an object the user added earlier
 - (void)removeObject:(MaplyComponentObject *)theObj;
 
@@ -150,6 +155,12 @@
 
 /// Pause animation (probably because we're going into the background)
 - (void)stopAnimation;
+
+/// Set the default polygon shader
+- (void)setDefaultPolyShader:(MaplyShader *)shader;
+
+/// Set the default line shader
+- (void)setDefaultLineShader:(MaplyShader *)shader;
 
 /// Turn on/off performance output (goes to the log periodically)
 @property (nonatomic,assign) bool performanceOutput;

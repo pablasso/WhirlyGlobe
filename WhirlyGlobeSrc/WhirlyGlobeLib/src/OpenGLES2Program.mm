@@ -201,7 +201,7 @@ bool compileShader(const std::string &name,const char *shaderTypeStr,GLuint *sha
 
 // Construct the program, compile and link
 OpenGLES2Program::OpenGLES2Program(const std::string &inName,const std::string &vShaderString,const std::string &fShaderString)
-    : name(inName)
+    : name(inName), lightsLastUpdated(0.0)
 {
     program = glCreateProgram();
     
@@ -338,7 +338,8 @@ bool OpenGLES2Program::hasLights()
     
 bool OpenGLES2Program::setLights(NSArray *lights,CFTimeInterval lastUpdate,WhirlyKitMaterial *mat,Eigen::Matrix4f &modelMat)
 {
-    if (lightsLastUpdated > lastUpdate)
+    // Note: This was causing all the geometry to turn up black
+    if (lightsLastUpdated >= lastUpdate)
         return false;
     lightsLastUpdated = lastUpdate;
     
