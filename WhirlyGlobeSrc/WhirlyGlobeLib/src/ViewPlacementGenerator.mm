@@ -117,7 +117,7 @@ void ViewPlacementGenerator::generateDrawables(WhirlyKitRendererFrameInfo *frame
                 testDir.normalize();
 
                 // Note: This is so dumb it hurts.  Figure out why the math is broken.
-                if (testDir.z() > -0.33)
+                if (testDir.z() > -0.58)
                     hidden = YES;
                     // If it's pointed away from the user, don't bother
                     //            if (worldLoc.dot(frameInfo.eyeVec) < 0.0)
@@ -149,7 +149,10 @@ void ViewPlacementGenerator::generateDrawables(WhirlyKitRendererFrameInfo *frame
             float scale = viewInst.view.superview.contentScaleFactor;
             if (scale < 1.0)
                 scale = 1.0;
-            viewInst.view.frame = CGRectMake(screenPt.x / scale, screenPt.y / scale, size.width, size.height);
+            
+            CGFloat x = (screenPt.x - (size.width / 2.0f)) / scale;
+            CGFloat y = (screenPt.y - size.height) / scale;
+            viewInst.view.frame = CGRectMake(x, y, size.width, size.height);
         }
     }
 }
