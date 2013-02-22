@@ -77,8 +77,6 @@ typedef MaplyShapeSphere WGShapeSphere;
 {
     /// Center of the base in local coordinates
     MaplyCoordinate baseCenter;
-    /// An optional height offset for the base (e.g. cylinder starts at this height)
-    float baseHeight;
     /// Radius in display units (1.0 is the size of the earth)
     float radius;
     /// Height in display units
@@ -88,7 +86,6 @@ typedef MaplyShapeSphere WGShapeSphere;
 }
 
 @property (nonatomic,assign) MaplyCoordinate baseCenter;
-@property (nonatomic,assign) float baseHeight;
 @property (nonatomic,assign) float radius;
 @property (nonatomic,assign) float height;
 @property (nonatomic,strong) UIColor *color;

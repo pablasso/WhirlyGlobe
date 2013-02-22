@@ -150,7 +150,9 @@ void ViewPlacementGenerator::generateDrawables(WhirlyKitRendererFrameInfo *frame
             if (scale < 1.0)
                 scale = 1.0;
 
-            viewInst.view.frame = CGRectMake(screenPt.x / scale + viewInst.offset.x(), screenPt.y / scale + viewInst.offset.y(), size.width, size.height);
+            CGFloat x = (screenPt.x - (size.width / 2.0f)) / scale;
+            CGFloat y = (screenPt.y - size.height) / scale;
+            viewInst.view.frame = CGRectMake(x, y, size.width, size.height);
         }
     }
 }
