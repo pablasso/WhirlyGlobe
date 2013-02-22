@@ -24,30 +24,30 @@
 
 namespace WhirlyKit
 {
-	
+
 Texture::Texture()
 	: glId(0), texData(NULL), isPVRTC(false), usesMipmaps(false), wrapU(false), wrapV(false)
 {
 }
-	
+
 // Construct with raw texture data
 Texture::Texture(NSData *texData,bool isPVRTC)
 	: glId(0), texData(texData), isPVRTC(isPVRTC), usesMipmaps(false), wrapU(false), wrapV(false)
-{ 
+{
 }
 
 // Set up the texture from a filename
 Texture::Texture(NSString *baseName,NSString *ext)
     : glId(0), texData(nil), isPVRTC(false), usesMipmaps(false), wrapU(false), wrapV(false)
-{	
+{
 	if (![ext compare:@"pvrtc"])
 	{
 		isPVRTC = true;
 
 		// Look for an absolute version or one from the bundle
-		// Only for pvrtc, though		
+		// Only for pvrtc, though
 		NSString* path = [NSString stringWithFormat:@"%@.%@",baseName,ext];
-		
+
 		if (![[NSFileManager defaultManager] fileExistsAtPath:path])
 			path = [[NSBundle mainBundle] pathForResource:baseName ofType:ext];
 
@@ -91,14 +91,14 @@ bool Texture::createInGL(bool releaseData,OpenGLMemManager *memManager)
     // We'll only create this once
 	if (glId)
         return true;
-	
+
 	// Allocate a texture and set up the various params
     glId = memManager->getTexID();
     CheckGLError("Texture::createInGL() glGenTextures()");
 
 	glBindTexture(GL_TEXTURE_2D, glId);
     CheckGLError("Texture::createInGL() glBindTexture()");
-	
+
 	// Set the texture parameters to use a minifying filter and a linear filter (weighted average)
     if (usesMipmaps)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
@@ -107,31 +107,31 @@ bool Texture::createInGL(bool releaseData,OpenGLMemManager *memManager)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     CheckGLError("Texture::createInGL() glTexParameteri()");
-	
+
 	// Configure textures
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (wrapU ? GL_REPEAT : GL_CLAMP_TO_EDGE));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (wrapV ? GL_REPEAT : GL_CLAMP_TO_EDGE));
 
     CheckGLError("Texture::createInGL() glTexParameteri()");
-	
+
 	// If it's in an optimized form, we can use that more efficiently
 	if (isPVRTC)
 	{
 		// Will always be 4 bits per pixel and RGB
-		glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG, width, height, 0, [texData length], [texData bytes]);
+		glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG, width, height, 0, [texData length], [texData bytes]);
         CheckGLError("Texture::createInGL() glCompressedTexImage2D()");
 	} else {
 		// Specify a 2D texture image, providing the a pointer to the image data in memory
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, [texData bytes]);
         CheckGLError("Texture::createInGL() glTexImage2D()");
-	}	
-    
+	}
+
     if (usesMipmaps)
         glGenerateMipmap(GL_TEXTURE_2D);
-	
+
 	if (releaseData)
 		texData = nil;
-	
+
 	return true;
 }
 
