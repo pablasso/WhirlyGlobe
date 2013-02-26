@@ -152,6 +152,7 @@ void ViewPlacementGenerator::generateDrawables(WhirlyKitRendererFrameInfo *frame
 
             CGFloat x = (screenPt.x - (size.width / 2.0f)) / scale;
             CGFloat y = (screenPt.y - size.height) / scale;
+            y -= 5.0f; // dirty hack
             viewInst.view.frame = CGRectMake(x, y, size.width, size.height);
         }
     }
