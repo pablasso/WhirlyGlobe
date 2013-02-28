@@ -50,15 +50,6 @@ using namespace WhirlyGlobe;
     animateRotation = nil;    
 }
 
-- (void)setRotationValuesW:(CGFloat)w x:(CGFloat)x y:(CGFloat)y z:(CGFloat)z {
-    Eigen::Quaternion<float> newRotQuat = Eigen::Quaternion<float>(w, x, y, z);
-    [globeView setRotQuat:newRotQuat];
-}
-
-- (NSDictionary *)getRotationValues {
-    return @{@"w": @(globeView.rotQuat.w()), @"x": @(globeView.rotQuat.x()), @"y": @(globeView.rotQuat.y()), @"z": @(globeView.rotQuat.z())};
-}
-
 - (void) dealloc
 {
     [self clear];

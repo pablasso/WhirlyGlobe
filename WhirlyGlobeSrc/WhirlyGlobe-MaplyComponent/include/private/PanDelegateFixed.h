@@ -23,7 +23,7 @@
 
 // Version of pan delegate specific to this app
 // The pan delegate handles panning and rotates the globe accordingly
-@interface PanDelegateFixed : NSObject<UIGestureRecognizerDelegate>
+@interface PanDelegateFixed : NSObject<UIGestureRecognizerDelegate> 
 
 @property(nonatomic,assign) bool northUp;
 

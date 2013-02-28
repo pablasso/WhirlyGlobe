@@ -19,7 +19,6 @@
  */
 
 #import "PanDelegateFixed.h"
-#import "/Volumes/HDD/Code/Freshout/tokbox-webrtc/iosapp/tokroom/AppDelegate.h"
 
 using namespace Eigen;
 using namespace WhirlyKit;
@@ -198,8 +197,6 @@ static const float MomentumAnimLen = 1.0;
  
                 // Keep track of the last rotation
                 [view setRotQuat:(newRotQuat)];
-                
-                [((AppDelegate *)[UIApplication sharedApplication].delegate) setRotationValues];
 
                 // If our spin sample is too old, grab a new one
                 spinDate = CFAbsoluteTimeGetCurrent();

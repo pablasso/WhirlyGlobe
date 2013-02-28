@@ -23,7 +23,6 @@
 
 @class WGViewControllerLayer;
 @class WhirlyGlobeViewController;
-@class PanDelegateFixed;
 
 /** Fill in this protocol to get called when the user taps on or near an object for
     selection. 
@@ -78,9 +77,6 @@
 /// Get/set the current height above terrain.
 /// The radius of the earth is 1.0.  Height above terrain is relative to that.
 @property (nonatomic,assign) float height;
-
-- (void)setRotationValuesW:(CGFloat)w x:(CGFloat)x y:(CGFloat)y z:(CGFloat)z;
-- (NSDictionary *)getRotationValues;
 
 /// Return the min and max heights above the globe for zooming
 - (void)getZoomLimitsMin:(float *)minHeight max:(float *)maxHeight;
