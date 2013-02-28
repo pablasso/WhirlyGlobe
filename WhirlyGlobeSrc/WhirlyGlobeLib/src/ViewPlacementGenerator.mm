@@ -27,40 +27,40 @@ using namespace WhirlyGlobe;
 
 namespace WhirlyKit
 {
-    
+
 ViewPlacementGenerator::ViewPlacementGenerator(const std::string &name)
     : Generator(name)
 {
 }
-    
+
 ViewPlacementGenerator::~ViewPlacementGenerator()
 {
     viewInstanceSet.clear();
 }
-    
+
 void ViewPlacementGenerator::addView(GeoCoord loc,UIView *view,float minVis,float maxVis)
 {
     // Make sure it isn't already there
     removeView(view);
-    
+
     ViewInstance viewInst(loc,view);
     viewInst.minVis = minVis;
     viewInst.maxVis = maxVis;
     viewInstanceSet.insert(viewInst);
 }
-    
+
 void ViewPlacementGenerator::removeView(UIView *view)
 {
     std::set<ViewInstance>::iterator it = viewInstanceSet.find(ViewInstance(view));
     if (it != viewInstanceSet.end())
         viewInstanceSet.erase(it);
 }
-    
+
 // Work through the list of views, moving things around and/or hiding as needed
 void ViewPlacementGenerator::generateDrawables(WhirlyKitRendererFrameInfo *frameInfo,std::vector<DrawableRef> &drawables,std::vector<DrawableRef> &screenDrawables)
 {
     CoordSystemDisplayAdapter *coordAdapter = frameInfo.scene->getCoordAdapter();
-    
+
     // Note: Make this work for generic 3D views
     WhirlyGlobeView *globeView = (WhirlyGlobeView *)frameInfo.theView;
     if (![globeView isKindOfClass:[WhirlyGlobeView class]])
@@ -78,14 +78,14 @@ void ViewPlacementGenerator::generateDrawables(WhirlyKitRendererFrameInfo *frame
     float marginY = frameInfo.sceneRenderer.framebufferHeight * 1.1;
     frameMbr.ll() = Point2f(0 - marginX,0 - marginY);
     frameMbr.ur() = Point2f(frameInfo.sceneRenderer.framebufferWidth + marginX,frameInfo.sceneRenderer.framebufferHeight + marginY);
-    
+
     for (std::set<ViewInstance>::iterator it = viewInstanceSet.begin();
          it != viewInstanceSet.end(); ++it)
     {
         const ViewInstance &viewInst = *it;
         bool hidden = NO;
         CGPoint screenPt;
-        
+
         // Height above globe test
         float visVal = [frameInfo.theView heightAboveSurface];
         if (!(viewInst.minVis == DrawVisibleInvalid || viewInst.maxVis == DrawVisibleInvalid ||
@@ -97,7 +97,7 @@ void ViewPlacementGenerator::generateDrawables(WhirlyKitRendererFrameInfo *frame
         {
             // Note: Calculate this ahead of time
             Point3f worldLoc = coordAdapter->localToDisplay(coordAdapter->getCoordSystem()->geographicToLocal(viewInst.loc));
-            
+
             // Check that it's not behind the globe
             if (globeView)
             {
@@ -132,15 +132,15 @@ void ViewPlacementGenerator::generateDrawables(WhirlyKitRendererFrameInfo *frame
                     screenPt = [globeView pointOnScreenFromSphere:worldLoc transform:&modelTrans frameSize:Point2f(frameInfo.sceneRenderer.framebufferWidth,frameInfo.sceneRenderer.framebufferHeight)];
                 else
                     screenPt = [mapView pointOnScreenFromPlane:worldLoc transform:&modelTrans frameSize:Point2f(frameInfo.sceneRenderer.framebufferWidth,frameInfo.sceneRenderer.framebufferHeight)];
-                
+
                 // Note: This check is too simple
                 if (!hidden &&
-                    (screenPt.x < frameMbr.ll().x() || screenPt.y < frameMbr.ll().y() || 
+                    (screenPt.x < frameMbr.ll().x() || screenPt.y < frameMbr.ll().y() ||
                      screenPt.x > frameMbr.ur().x() || screenPt.y > frameMbr.ur().y()))
                     hidden = YES;
             }
         }
-        
+
         viewInst.view.hidden = hidden;
         if (!hidden)
         {

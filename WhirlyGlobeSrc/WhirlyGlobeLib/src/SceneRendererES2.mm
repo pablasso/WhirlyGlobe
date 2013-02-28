@@ -60,14 +60,14 @@ public:
         if (useAlpha)
             if (a->hasAlpha(frameInfo) != b->hasAlpha(frameInfo))
                 return !a->hasAlpha(frameInfo);
-                
+
         return a->getDrawPriority() < b->getDrawPriority();
     }
-    
+
     bool useAlpha,useLines;
     WhirlyKitRendererFrameInfo * __unsafe_unretained frameInfo;
 };
-    
+
 }
 
 @implementation WhirlyKitSceneRendererES2
@@ -81,7 +81,7 @@ public:
 {
     self = [super initWithOpenGLESVersion:kEAGLRenderingAPIOpenGLES2];
     lights = [NSMutableArray array];
-    
+
     // Add a simple default light
     WhirlyKitDirectionalLight *light = [[WhirlyKitDirectionalLight alloc] init];
     light->pos = Vector3f(0.75, 0.5, -1.0);
@@ -212,7 +212,7 @@ static const char *fragmentShaderLine =
     EAGLContext *oldContext = [EAGLContext currentContext];
     if (oldContext != context)
         [EAGLContext setCurrentContext:context];
-    
+
     // Provider default shader programs if we don't already have them
     SimpleIdentity triShaderID,lineShaderID;
     scene->getDefaultProgramIDs(triShaderID, lineShaderID);
@@ -265,7 +265,7 @@ static const char *fragmentShaderLine =
 - (BOOL)resizeFromLayer:(CAEAGLLayer *)layer
 {
     bool ret = [super resizeFromLayer:layer];
-    
+
     return ret;
 }
 
@@ -276,32 +276,32 @@ static const float ScreenOverlap = 0.1;
 {
     if (framebufferWidth <= 0 || framebufferHeight <= 0)
         return;
-    
+
 	[theView animate];
 
     // Decide if we even need to draw
     if (!scene->hasChanges() && ![self viewDidChange])
         return;
-    
+
     lastDraw = CFAbsoluteTimeGetCurrent();
-    
+
     if (perfInterval > 0)
         perfTimer.startTiming("aaRender");
-    
+
 	if (frameCountStart)
 		frameCountStart = CFAbsoluteTimeGetCurrent();
-	
+
     if (perfInterval > 0)
         perfTimer.startTiming("Render Setup");
-    
+
     EAGLContext *oldContext = [EAGLContext currentContext];
     if (oldContext != context)
         [EAGLContext setCurrentContext:context];
     CheckGLError("SceneRendererES2: setCurrentContext");
-    
+
     // Turn on blending
     // Note: Only need to do this once
-	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFunc(GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA); // for premultiplied alpha
     glEnable(GL_BLEND);
 
     // See if we're dealing with a globe view
@@ -317,7 +317,7 @@ static const float ScreenOverlap = 0.1;
     // Get the model and view matrices
     Eigen::Matrix4f modelTrans = [theView calcModelMatrix];
     Eigen::Matrix4f viewTrans = [theView calcViewMatrix];
-    
+
     // Set up a projection matrix
     // Borrowed from the "OpenGL ES 2.0 Programming" book
 	Point2f frustLL,frustUR;
@@ -336,13 +336,13 @@ static const float ScreenOverlap = 0.1;
     projMat(1,2) = (frustUR.y()+frustLL.y()) / delta.y();
     projMat(2,2) = -(near + far ) / delta.z();
     projMat(3,2) = -1.0f;
-    
+
     projMat(2,3) = -2.0f * near * far / delta.z();
     projMat(0,3) = projMat(1,3) = projMat(3,3) = 0.0f;
-    
+
     Eigen::Matrix4f modelAndViewMat = viewTrans * modelTrans;
     Eigen::Matrix4f mvpMat = projMat * (modelAndViewMat);
-    
+
     switch (zBufferMode)
     {
         case zBufferOn:
@@ -359,7 +359,7 @@ static const float ScreenOverlap = 0.1;
             glDepthFunc(GL_ALWAYS);
             break;
     }
-    
+
 	glClearColor(clearColor.r / 255.0, clearColor.g / 255.0, clearColor.b / 255.0, clearColor.a / 255.0);
     CheckGLError("SceneRendererES2: glClearColor");
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -367,17 +367,17 @@ static const float ScreenOverlap = 0.1;
 
 	glEnable(GL_CULL_FACE);
     CheckGLError("SceneRendererES2: glEnable(GL_CULL_FACE)");
-    
+
     if (perfInterval > 0)
         perfTimer.stopTiming("Render Setup");
-    
+
 	if (scene)
 	{
 		numDrawables = 0;
-        
+
         SimpleIdentity defaultTriShader,defaultLineShader;
         scene->getDefaultProgramIDs(defaultTriShader, defaultLineShader);
-        
+
         WhirlyKitRendererFrameInfo *frameInfo = [[WhirlyKitRendererFrameInfo alloc] init];
         frameInfo.oglVersion = kEAGLRenderingAPIOpenGLES2;
         frameInfo.sceneRenderer = self;
@@ -390,35 +390,35 @@ static const float ScreenOverlap = 0.1;
         frameInfo.mvpMat = mvpMat;
         frameInfo.viewAndModelMat = modelAndViewMat;
         frameInfo.lights = lights;
-		
+
         if (perfInterval > 0)
             perfTimer.startTiming("Scene processing");
-        
+
         // Let the active models to their thing
         // That thing had better not take too long
         for (NSObject<WhirlyKitActiveModel> *activeModel in scene->activeModels)
             [activeModel updateForFrame:frameInfo];
-        
+
         if (perfInterval > 0)
             perfTimer.addCount("Scene changes", scene->changeRequests.size());
-        
+
 		// Merge any outstanding changes into the scenegraph
 		// Or skip it if we don't acquire the lock
 		scene->processChanges(theView,self);
-        
+
         if (perfInterval > 0)
             perfTimer.stopTiming("Scene processing");
-        
+
         if (perfInterval > 0)
             perfTimer.startTiming("Culling");
-		
+
 		// We need a reverse of the eye vector in model space
 		// We'll use this to determine what's pointed away
 		Eigen::Matrix4f modelTransInv = modelTrans.inverse();
 		Vector4f eyeVec4 = modelTransInv * Vector4f(0,0,1,0);
 		Vector3f eyeVec3(eyeVec4.x(),eyeVec4.y(),eyeVec4.z());
         frameInfo.eyeVec = eyeVec3;
-		
+
         // If we're looking at a globe, run the culling
         std::set<DrawableRef> toDraw;
         int drawablesConsidered = 0;
@@ -429,7 +429,7 @@ static const float ScreenOverlap = 0.1;
         screenMbr.addPoint(Point2f(-ScreenOverlap*framebufferWidth,-ScreenOverlap*framebufferHeight));
         screenMbr.addPoint(Point2f((1+ScreenOverlap)*framebufferWidth,(1+ScreenOverlap)*framebufferHeight));
         [self findDrawables:cullTree->getTopCullable() view:globeView frameSize:Point2f(framebufferWidth,framebufferHeight) modelTrans:&modelTrans eyeVec:eyeVec3 frameInfo:frameInfo screenMbr:screenMbr topLevel:true toDraw:&toDraw considered:&drawablesConsidered];
-        
+
         // Turn these drawables in to a vector
 		std::vector<Drawable *> drawList;
         //		drawList.reserve(toDraw.size());
@@ -442,13 +442,13 @@ static const float ScreenOverlap = 0.1;
             else
                 NSLog(@"Bad drawable coming from cull tree.");
         }
-        
+
         if (perfInterval > 0)
             perfTimer.stopTiming("Culling");
-        
+
         if (perfInterval > 0)
             perfTimer.startTiming("Generators - generate");
-        
+
         // Now ask our generators to make their drawables
         // Note: Not doing any culling here
         //       And we should reuse these Drawables
@@ -457,7 +457,7 @@ static const float ScreenOverlap = 0.1;
         for (GeneratorSet::iterator it = generators->begin();
              it != generators->end(); ++it)
             (*it)->generateDrawables(frameInfo, generatedDrawables, screenDrawables);
-        
+
         // Add the generated drawables and sort them all together
         for (unsigned int ii=0;ii<generatedDrawables.size();ii++)
         {
@@ -467,26 +467,26 @@ static const float ScreenOverlap = 0.1;
         }
         bool sortLinesToEnd = (zBufferMode == zBufferOffUntilLines);
         std::sort(drawList.begin(),drawList.end(),DrawListSortStruct2(sortAlphaToEnd,sortLinesToEnd,frameInfo));
-                
+
         if (perfInterval > 0)
         {
             perfTimer.addCount("Drawables considered", drawablesConsidered);
             perfTimer.addCount("Cullables", cullTree->getCount());
         }
-        
+
         if (perfInterval > 0)
             perfTimer.stopTiming("Generators - generate");
-        
+
         if (perfInterval > 0)
             perfTimer.startTiming("Draw Execution");
-        
+
         SimpleIdentity curProgramId = EmptyIdentity;
-		
+
         bool depthMaskOn = (zBufferMode == zBufferOn);
 		for (unsigned int ii=0;ii<drawList.size();ii++)
 		{
 			Drawable *drawable = drawList[ii];
-            
+
             // The first time we hit an explicitly alpha drawable
             //  turn off the depth buffer
             if (depthBufferOffForAlpha && !(zBufferMode == zBufferOffUntilLines))
@@ -497,7 +497,7 @@ static const float ScreenOverlap = 0.1;
                     glDisable(GL_DEPTH_TEST);
                 }
             }
-            
+
             // For this mode we turn the z buffer off until we get our first lines
             // This assumes we're sorting lines to the end
             if (zBufferMode == zBufferOffUntilLines)
@@ -508,7 +508,7 @@ static const float ScreenOverlap = 0.1;
                     depthMaskOn = true;
                 }
             }
-            
+
             // If it has a transform, apply that
             // Note: Put the missing local transform back
 //            const Matrix4f *thisMat = drawable->getMatrix();
@@ -517,7 +517,7 @@ static const float ScreenOverlap = 0.1;
 //                glPushMatrix();
 //                glMultMatrixf(thisMat->data());
 //            }
-            
+
             // Figure out the program to use for drawing
             SimpleIdentity drawProgramId = drawable->getProgram();
             if (drawProgramId == EmptyIdentity)
@@ -540,13 +540,13 @@ static const float ScreenOverlap = 0.1;
             }
             if (drawProgramId == EmptyIdentity)
                 continue;
-            
+
             // Draw using the given program
             drawable->draw(frameInfo,scene);
-            
+
 //            if (thisMat)
 //                glPopMatrix();
-            
+
             numDrawables++;
             if (perfInterval > 0)
             {
@@ -556,25 +556,25 @@ static const float ScreenOverlap = 0.1;
 //                    perfTimer.addCount("Buffer IDs", basicDraw->getPointBuffer());
             }
 		}
-        
+
         if (perfInterval > 0)
             perfTimer.addCount("Drawables drawn", numDrawables);
-        
+
         if (perfInterval > 0)
             perfTimer.stopTiming("Draw Execution");
-        
+
         // Anything generated needs to be cleaned up
         generatedDrawables.clear();
         drawList.clear();
-        
+
         if (perfInterval > 0)
             perfTimer.startTiming("Generators - Draw 2D");
-        
+
         // Now for the 2D display
         if (!screenDrawables.empty())
         {
             curProgramId = EmptyIdentity;
-            
+
             glDisable(GL_DEPTH_TEST);
             // Sort by draw priority (and alpha, I guess)
             for (unsigned int ii=0;ii<screenDrawables.size();ii++)
@@ -600,11 +600,11 @@ static const float ScreenOverlap = 0.1;
             frameInfo.mvpMat = orthoMat;
             // Turn off lights
             frameInfo.lights = nil;
-            
+
             for (unsigned int ii=0;ii<drawList.size();ii++)
             {
                 Drawable *drawable = drawList[ii];
-                
+
                 if (drawable->isOn(frameInfo))
                 {
                     // Figure out the program to use for drawing
@@ -628,27 +628,27 @@ static const float ScreenOverlap = 0.1;
                     numDrawables++;
                 }
             }
-            
+
             screenDrawables.clear();
             drawList.clear();
         }
-        
+
         if (perfInterval > 0)
             perfTimer.stopTiming("Generators - Draw 2D");
     }
-    
+
     if (perfInterval > 0)
         perfTimer.startTiming("Present Renderbuffer");
-    
+
     glBindRenderbuffer(GL_RENDERBUFFER, colorRenderbuffer);
     [context presentRenderbuffer:GL_RENDERBUFFER];
 
     if (perfInterval > 0)
         perfTimer.stopTiming("Present Renderbuffer");
-    
+
     if (perfInterval > 0)
         perfTimer.stopTiming("aaRender");
-    
+
 	// Update the frames per sec
 	if (perfInterval > 0 && frameCount++ > perfInterval)
 	{
@@ -657,12 +657,12 @@ static const float ScreenOverlap = 0.1;
 		framesPerSec = frameCount / howLong;
 		frameCountStart = now;
 		frameCount = 0;
-        
+
         NSLog(@"---Rendering Performance---");
         perfTimer.log();
         perfTimer.clear();
 	}
-    
+
     if (oldContext != context)
         [EAGLContext setCurrentContext:oldContext];
 }
