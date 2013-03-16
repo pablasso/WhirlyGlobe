@@ -41,8 +41,9 @@ using namespace WhirlyKit;
 {
 	WhirlyGlobeTapDelegate *tapDelegate = [[WhirlyGlobeTapDelegate alloc] initWithGlobeView:globeView];
     
-	[view addGestureRecognizer: [[UITapGestureRecognizer alloc] initWithTarget:tapDelegate action:@selector(tapAction:)]];
-    
+    UITapGestureRecognizer *gestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:tapDelegate action:@selector(tapAction:)];
+    gestureRecognizer.delegate = self;
+	[view addGestureRecognizer:gestureRecognizer];
 	return tapDelegate;
 }
 
@@ -52,10 +53,16 @@ using namespace WhirlyKit;
     return otherGestureRecognizer.view == gestureRecognizer.view;
 }
 
+/* Fix for iOS 5 bug. A button with a superview that has a UIGestureRecognizer attached to it, will ignore the button touches. */
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
+    return NO;
+}
+
 // Called for a tap
 - (void)tapAction:(id)sender
 {
 	UITapGestureRecognizer *tap = sender;
+    tap.delegate = self;
     
 	WhirlyKitEAGLView  *glView = (WhirlyKitEAGLView  *)tap.view;
 	WhirlyKitSceneRendererES *sceneRender = glView.renderer;
